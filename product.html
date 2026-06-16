@@ -9,26 +9,32 @@
 <body>
 
 <header>
-  <h1 id="shop-name">쇼핑몰</h1>
-  <a href="index.html">목록으로</a>
+  <a class="header-logo" href="index.html" id="shop-name">OF CHARLOTTE</a>
+  <div class="header-nav">
+    <a href="index.html">COLLECTION</a>
+  </div>
 </header>
 
 <main>
-  <a class="back-btn" href="index.html">← 목록으로</a>
+  <a class="back-btn" href="index.html">← Back</a>
   <div id="content">
-    <div class="loading"><div class="spinner"></div><p>불러오는 중...</p></div>
+    <div class="loading"><div class="spinner"></div><p>Loading...</p></div>
   </div>
 </main>
+
+<footer>
+  <span id="footer-name">OF CHARLOTTE</span> &nbsp;·&nbsp; All rights reserved
+</footer>
 
 <div id="toast"></div>
 
 <script src="js/config.js"></script>
 <script>
 document.querySelector('#shop-name').textContent = SHOP_NAME;
+document.querySelector('#footer-name').textContent = SHOP_NAME;
 
 const params = new URLSearchParams(location.search);
 const productId = params.get('id');
-
 let product = null;
 
 async function loadProduct() {
@@ -58,29 +64,29 @@ function renderProduct(p) {
   if (opts.color && opts.colorList?.length) {
     optionsHtml += `
       <div class="form-group">
-        <label>색상 <span class="required">*</span></label>
-        <div class="chip-group" id="color-chips">
+        <label>Color <span class="required">*</span></label>
+        <div class="chip-group">
           ${opts.colorList.map(c => `<button type="button" class="chip" data-val="${c}" onclick="selectChip('color',this)">${c}</button>`).join('')}
         </div>
-        <input type="hidden" id="sel-color" required>
+        <input type="hidden" id="sel-color">
       </div>`;
   }
 
   if (opts.size && opts.sizeList?.length) {
     optionsHtml += `
       <div class="form-group">
-        <label>사이즈 <span class="required">*</span></label>
-        <div class="chip-group" id="size-chips">
+        <label>Size <span class="required">*</span></label>
+        <div class="chip-group">
           ${opts.sizeList.map(s => `<button type="button" class="chip" data-val="${s}" onclick="selectChip('size',this)">${s}</button>`).join('')}
         </div>
-        <input type="hidden" id="sel-size" required>
+        <input type="hidden" id="sel-size">
       </div>`;
   }
 
   if (opts.shoeSize) {
     optionsHtml += `
       <div class="form-group">
-        <label>호수(cm) <span class="required">*</span></label>
+        <label>호수 (cm) <span class="required">*</span></label>
         <input type="number" id="sel-shoesize" placeholder="예: 250" min="200" max="320" step="5">
       </div>`;
   }
@@ -107,14 +113,14 @@ function renderProduct(p) {
 
   const formHtml = closed ? `
     <div class="closed-notice">
-      <h3>⏰ 마감된 상품입니다</h3>
-      <p>신청 기간이 종료되었습니다.</p>
+      <h3>Closed</h3>
+      <p>신청 기간이 종료되었습니다</p>
     </div>` : `
     <form class="form-section" id="order-form" onsubmit="submitOrder(event)">
-      <h3>📦 주문 옵션</h3>
+      <h3>Order Options</h3>
       ${optionsHtml}
-
-      <h3 style="margin-top:20px">👤 주문자 정보</h3>
+      <div class="divider"></div>
+      <h3>Order Information</h3>
       <div class="form-group">
         <label>이름 <span class="required">*</span></label>
         <input type="text" id="f-name" placeholder="홍길동" required>
@@ -125,7 +131,7 @@ function renderProduct(p) {
       </div>
       <div class="form-group">
         <label>배송 주소 <span class="required">*</span></label>
-        <input type="text" id="f-addr1" placeholder="기본주소 (도로명/지번)" required style="margin-bottom:6px">
+        <input type="text" id="f-addr1" placeholder="기본주소 (도로명/지번)" required style="margin-bottom:8px">
         <input type="text" id="f-addr2" placeholder="상세주소 (동/호수)">
       </div>
       <div class="form-group">
@@ -136,51 +142,53 @@ function renderProduct(p) {
           <option value="현금영수증">현금영수증</option>
         </select>
       </div>
-
-      <button type="submit" class="btn btn-primary" id="submit-btn">신청하기</button>
+      <div style="margin-top:28px">
+        <button type="submit" class="btn btn-primary" id="submit-btn">신청하기</button>
+      </div>
     </form>`;
 
   document.getElementById('content').innerHTML = `
-    <div class="product-detail">
-      ${p.image ? `<img src="${p.image}" alt="${p.title}" onerror="this.style.display='none'">` : ''}
-      <h2>${p.title}</h2>
-      ${p.price ? `<div class="price">${Number(p.price).toLocaleString()}원</div>` : ''}
-      ${p.desc ? `<div class="desc">${p.desc.replace(/\n/g,'<br>')}</div>` : ''}
-      <div class="deadline-box">⏰ 마감: ${deadlineStr}</div>
-      ${formHtml}
+    <div class="product-detail-wrap">
+      <div class="product-detail-img">
+        ${p.image ? `<img src="${p.image}" alt="${p.title}" onerror="this.style.display='none'">` : '<div style="width:100%;aspect-ratio:3/4;background:#f0ece6;border:1px solid var(--border)"></div>'}
+      </div>
+      <div class="product-detail-info">
+        <div class="brand">${SHOP_NAME}</div>
+        <h2>${p.title}</h2>
+        ${p.price ? `<div class="price">₩ ${Number(p.price).toLocaleString()}</div>` : ''}
+        <div class="divider"></div>
+        ${p.desc ? `<div class="desc">${p.desc.replace(/\n/g,'<br>')}</div>` : ''}
+        <div class="deadline-box">⏰ &nbsp;${deadlineStr}</div>
+        ${formHtml}
+      </div>
     </div>`;
 }
 
 function selectChip(type, btn) {
-  const group = btn.closest('.chip-group');
-  group.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+  btn.closest('.chip-group').querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
   btn.classList.add('selected');
   document.getElementById(`sel-${type}`).value = btn.dataset.val;
 }
 
 function changeQty(delta) {
   const el = document.getElementById('sel-qty');
-  const v = Math.max(1, Math.min(99, parseInt(el.value) + delta));
-  el.value = v;
+  el.value = Math.max(1, Math.min(99, parseInt(el.value) + delta));
 }
 
 async function submitOrder(e) {
   e.preventDefault();
   const opts = typeof product.options === 'string' ? JSON.parse(product.options) : product.options;
 
-  // 필수값 검사
-  if (opts.color && opts.colorList?.length && !document.getElementById('sel-color').value) {
-    return showToast('색상을 선택해주세요'); }
-  if (opts.size && opts.sizeList?.length && !document.getElementById('sel-size').value) {
-    return showToast('사이즈를 선택해주세요'); }
+  if (opts.color && opts.colorList?.length && !document.getElementById('sel-color').value)
+    return showToast('색상을 선택해주세요');
+  if (opts.size && opts.sizeList?.length && !document.getElementById('sel-size').value)
+    return showToast('사이즈를 선택해주세요');
 
   const btn = document.getElementById('submit-btn');
-  btn.disabled = true;
-  btn.textContent = '신청 중...';
+  btn.disabled = true; btn.textContent = '신청 중...';
 
   const order = {
-    productId: product.id,
-    productTitle: product.title,
+    productId: product.id, productTitle: product.title,
     color: document.getElementById('sel-color')?.value || '',
     size: document.getElementById('sel-size')?.value || '',
     shoeSize: document.getElementById('sel-shoesize')?.value || '',
@@ -193,32 +201,25 @@ async function submitOrder(e) {
   };
 
   try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'addOrder', order }),
-    });
+    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'addOrder', order }) });
     const data = await res.json();
     if (data.success) {
       document.getElementById('order-form').innerHTML = `
-        <div style="text-align:center;padding:30px 0">
-          <div style="font-size:48px">✅</div>
-          <h3 style="margin:12px 0 8px">신청 완료!</h3>
-          <p style="color:#666;font-size:14px">주문이 접수되었습니다.<br>마감 후 연락드리겠습니다.</p>
+        <div style="text-align:center;padding:48px 0">
+          <div style="font-size:40px;margin-bottom:16px">✦</div>
+          <h3 style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;letter-spacing:3px;margin-bottom:12px">Thank You</h3>
+          <p style="color:var(--gray);font-size:12px;letter-spacing:2px;line-height:2">주문이 접수되었습니다<br>마감 후 연락드리겠습니다</p>
         </div>`;
-    } else {
-      throw new Error(data.message);
-    }
-  } catch (err) {
+    } else throw new Error();
+  } catch {
     showToast('오류가 발생했습니다. 다시 시도해주세요.');
-    btn.disabled = false;
-    btn.textContent = '신청하기';
+    btn.disabled = false; btn.textContent = '신청하기';
   }
 }
 
 function showToast(msg) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
+  t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
