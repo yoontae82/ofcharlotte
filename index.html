@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="page-title">쇼핑몰</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header>
+  <h1 id="shop-name">쇼핑몰</h1>
+  <a href="admin.html">관리자</a>
+</header>
+
+<main>
+  <div id="content">
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>상품을 불러오는 중...</p>
+    </div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script src="js/config.js"></script>
+<script>
+document.querySelector('#shop-name').textContent = SHOP_NAME;
+document.querySelector('#page-title').textContent = SHOP_NAME;
+
+async function loadProducts() {
+  try {
+    const res = await fetch(`${API_URL}?action=getProducts`);
+    const data = await res.json();
+    renderProducts(data.products || []);
+  } catch (e) {
+    document.getElementById('content').innerHTML =
+      '<div class="empty"><p>상품을 불러오지 못했습니다.<br>잠시 후 다시 시도해주세요.</p></div>';
+  }
+}
+
+function renderProducts(products) {
+  const el = document.getElementById('content');
+  if (!products.length) {
+    el.innerHTML = '<div class="empty"><p>등록된 상품이 없습니다.</p></div>';
+    return;
+  }
+
+  const now = new Date();
+  const html = `<div class="product-grid">${products.map(p => {
+    const deadline = new Date(p.deadline);
+    const closed = deadline < now;
+    const deadlineStr = `${deadline.getMonth()+1}/${deadline.getDate()} ${deadline.getHours()}시 마감`;
+    return `
+      <a class="product-card" href="product.html?id=${p.id}">
+        <img src="${p.image || ''}" onerror="this.style.background='#ddd'" alt="${p.title}">
+        <div class="card-body">
+          <h3>${p.title}</h3>
+          ${p.price ? `<div class="price">${Number(p.price).toLocaleString()}원</div>` : ''}
+          <div class="deadline">⏰ ${deadlineStr}</div>
+          <span class="${closed ? 'badge-closed' : 'badge-open'}">${closed ? '마감됨' : '신청중'}</span>
+        </div>
+      </a>`;
+  }).join('')}</div>`;
+  el.innerHTML = html;
+}
+
+loadProducts();
+</script>
+</body>
+</html>

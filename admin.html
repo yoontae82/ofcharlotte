@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header>
+  <h1 id="shop-name">쇼핑몰</h1>
+  <a href="index.html">쇼핑몰 보기</a>
+</header>
+
+<!-- 로그인 화면 -->
+<div id="login-screen">
+  <div class="admin-login">
+    <h2>🔐 관리자 로그인</h2>
+    <div class="form-group">
+      <label>비밀번호</label>
+      <input type="password" id="pw-input" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn btn-primary" onclick="doLogin()">로그인</button>
+  </div>
+</div>
+
+<!-- 관리자 메인 -->
+<main id="admin-main" style="display:none">
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('register')">상품 등록</button>
+    <button class="tab-btn" onclick="switchTab('products')">상품 목록</button>
+    <button class="tab-btn" onclick="switchTab('orders')">주문 확인</button>
+  </div>
+
+  <!-- 상품 등록 탭 -->
+  <div id="tab-register">
+    <div class="form-section">
+      <h3>📦 새 상품 등록</h3>
+
+      <div class="form-group">
+        <label>상품명 <span class="required">*</span></label>
+        <input type="text" id="p-title" placeholder="상품명을 입력하세요">
+      </div>
+      <div class="form-group">
+        <label>가격 (원)</label>
+        <input type="number" id="p-price" placeholder="예: 29000">
+      </div>
+      <div class="form-group">
+        <label>상품 설명</label>
+        <textarea id="p-desc" placeholder="상품 설명을 입력하세요"></textarea>
+      </div>
+      <div class="form-group">
+        <label>이미지 URL</label>
+        <input type="url" id="p-image" placeholder="https://..." oninput="previewImg(this.value)">
+        <img id="img-preview" class="img-preview" alt="미리보기">
+      </div>
+      <div class="form-group">
+        <label>마감일시 <span class="required">*</span></label>
+        <input type="datetime-local" id="p-deadline">
+      </div>
+
+      <h3 style="margin:20px 0 12px">옵션 설정</h3>
+
+      <div class="form-group">
+        <label><input type="checkbox" id="opt-color" onchange="toggleOpt('color')"> 색상 옵션 사용</label>
+        <div id="opt-color-box" style="display:none;margin-top:10px">
+          <input type="text" id="opt-color-list" placeholder="예: 빨강, 파랑, 블랙 (쉼표로 구분)">
+        </div>
+      </div>
+      <div class="form-group">
+        <label><input type="checkbox" id="opt-size" onchange="toggleOpt('size')"> 사이즈 옵션 사용</label>
+        <div id="opt-size-box" style="display:none;margin-top:10px">
+          <input type="text" id="opt-size-list" placeholder="예: S, M, L, XL (쉼표로 구분)">
+        </div>
+      </div>
+      <div class="form-group">
+        <label><input type="checkbox" id="opt-shoesize"> 호수(cm) 옵션 사용</label>
+      </div>
+      <div class="form-group">
+        <label><input type="checkbox" id="opt-quantity" checked> 수량 옵션 사용</label>
+      </div>
+      <div class="form-group">
+        <label><input type="checkbox" id="opt-other"> 기타 요청사항 사용</label>
+      </div>
+
+      <button class="btn btn-primary" onclick="registerProduct()">상품 등록하기</button>
+    </div>
+  </div>
+
+  <!-- 상품 목록 탭 -->
+  <div id="tab-products" style="display:none">
+    <div id="products-list">
+      <div class="loading"><div class="spinner"></div><p>불러오는 중...</p></div>
+    </div>
+  </div>
+
+  <!-- 주문 확인 탭 -->
+  <div id="tab-orders" style="display:none">
+    <div class="form-section" style="margin-bottom:16px">
+      <div class="form-group">
+        <label>상품으로 필터</label>
+        <select id="order-filter" onchange="loadOrders()">
+          <option value="">전체 주문</option>
+        </select>
+      </div>
+      <button class="btn btn-outline" onclick="exportCSV()">📥 엑셀(CSV) 다운로드</button>
+    </div>
+    <div id="orders-list">
+      <div class="loading"><div class="spinner"></div><p>불러오는 중...</p></div>
+    </div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script src="js/config.js"></script>
+<script>
+document.querySelector('#shop-name').textContent = SHOP_NAME;
+
+// ── 로그인 ──
+function doLogin() {
+  if (document.getElementById('pw-input').value === ADMIN_PASSWORD) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-main').style.display = 'block';
+    loadAdminProducts();
+    loadOrders();
+  } else {
+    showToast('비밀번호가 틀렸습니다');
+  }
+}
+
+// ── 탭 전환 ──
+function switchTab(name) {
+  ['register','products','orders'].forEach(t => {
+    document.getElementById(`tab-${t}`).style.display = t === name ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', ['register','products','orders'][i] === name);
+  });
+}
+
+// ── 옵션 토글 ──
+function toggleOpt(type) {
+  const checked = document.getElementById(`opt-${type}`).checked;
+  document.getElementById(`opt-${type}-box`).style.display = checked ? 'block' : 'none';
+}
+
+// ── 이미지 미리보기 ──
+function previewImg(url) {
+  const el = document.getElementById('img-preview');
+  if (url) { el.src = url; el.classList.add('show'); }
+  else { el.classList.remove('show'); }
+}
+
+// ── 상품 등록 ──
+async function registerProduct() {
+  const title = document.getElementById('p-title').value.trim();
+  const deadline = document.getElementById('p-deadline').value;
+  if (!title) return showToast('상품명을 입력해주세요');
+  if (!deadline) return showToast('마감일시를 설정해주세요');
+
+  const options = {
+    color: document.getElementById('opt-color').checked,
+    colorList: document.getElementById('opt-color-list').value.split(',').map(s=>s.trim()).filter(Boolean),
+    size: document.getElementById('opt-size').checked,
+    sizeList: document.getElementById('opt-size-list').value.split(',').map(s=>s.trim()).filter(Boolean),
+    shoeSize: document.getElementById('opt-shoesize').checked,
+    quantity: document.getElementById('opt-quantity').checked,
+    other: document.getElementById('opt-other').checked,
+  };
+
+  const product = {
+    title,
+    price: document.getElementById('p-price').value,
+    desc: document.getElementById('p-desc').value,
+    image: document.getElementById('p-image').value,
+    deadline: new Date(deadline).toISOString(),
+    options: JSON.stringify(options),
+  };
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'addProduct', product }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('✅ 상품이 등록되었습니다!');
+      document.getElementById('p-title').value = '';
+      document.getElementById('p-price').value = '';
+      document.getElementById('p-desc').value = '';
+      document.getElementById('p-image').value = '';
+      document.getElementById('img-preview').classList.remove('show');
+      loadAdminProducts();
+    }
+  } catch(e) { showToast('오류가 발생했습니다'); }
+}
+
+// ── 상품 목록 (관리자) ──
+let allProducts = [];
+async function loadAdminProducts() {
+  try {
+    const res = await fetch(`${API_URL}?action=getProducts`);
+    const data = await res.json();
+    allProducts = data.products || [];
+    renderAdminProducts(allProducts);
+
+    // 주문 필터 셀렉트 채우기
+    const sel = document.getElementById('order-filter');
+    sel.innerHTML = '<option value="">전체 주문</option>' +
+      allProducts.map(p => `<option value="${p.id}">${p.title}</option>`).join('');
+  } catch(e) {}
+}
+
+function renderAdminProducts(products) {
+  const el = document.getElementById('products-list');
+  if (!products.length) {
+    el.innerHTML = '<div class="empty"><p>등록된 상품이 없습니다.</p></div>';
+    return;
+  }
+  const now = new Date();
+  el.innerHTML = products.map(p => {
+    const deadline = new Date(p.deadline);
+    const closed = deadline < now;
+    return `
+      <div class="form-section" style="margin-bottom:12px">
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          ${p.image ? `<img src="${p.image}" style="width:70px;height:70px;object-fit:cover;border-radius:8px;flex-shrink:0">` : ''}
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:15px;margin-bottom:4px">${p.title}</div>
+            ${p.price ? `<div style="color:#e74c3c;font-weight:700">${Number(p.price).toLocaleString()}원</div>` : ''}
+            <div style="font-size:12px;color:#888;margin-top:4px">마감: ${new Date(p.deadline).toLocaleString('ko-KR')}</div>
+            <span class="${closed?'badge-closed':'badge-open'}">${closed?'마감됨':'신청중'}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <a href="product.html?id=${p.id}" target="_blank" style="font-size:12px;color:#555;text-decoration:none;border:1px solid #ddd;padding:4px 8px;border-radius:6px">보기</a>
+            <button onclick="deleteProduct('${p.id}')" style="font-size:12px;color:#e74c3c;background:none;border:1px solid #fcc;padding:4px 8px;border-radius:6px;cursor:pointer">삭제</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function deleteProduct(id) {
+  if (!confirm('상품을 삭제하시겠습니까?')) return;
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deleteProduct', id }),
+    });
+    const data = await res.json();
+    if (data.success) { showToast('삭제되었습니다'); loadAdminProducts(); }
+  } catch(e) { showToast('오류가 발생했습니다'); }
+}
+
+// ── 주문 확인 ──
+let allOrders = [];
+async function loadOrders() {
+  const productId = document.getElementById('order-filter')?.value || '';
+  try {
+    const res = await fetch(`${API_URL}?action=getOrders&productId=${productId}`);
+    const data = await res.json();
+    allOrders = data.orders || [];
+    renderOrders(allOrders);
+  } catch(e) {
+    document.getElementById('orders-list').innerHTML = '<div class="empty"><p>주문을 불러오지 못했습니다.</p></div>';
+  }
+}
+
+function renderOrders(orders) {
+  const el = document.getElementById('orders-list');
+  if (!orders.length) {
+    el.innerHTML = '<div class="empty"><p>주문이 없습니다.</p></div>';
+    return;
+  }
+  el.innerHTML = `
+    <div style="font-size:13px;color:#888;margin-bottom:8px">총 ${orders.length}건</div>
+    <div class="table-scroll">
+      <table class="orders-table">
+        <thead>
+          <tr>
+            <th>상품</th><th>이름</th><th>연락처</th><th>주소</th>
+            <th>색상</th><th>사이즈</th><th>호수</th><th>수량</th>
+            <th>결제</th><th>기타</th><th>신청일시</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${orders.map(o => `
+            <tr>
+              <td>${o.productTitle||''}</td>
+              <td>${o.name||''}</td>
+              <td>${o.phone||''}</td>
+              <td>${o.address||''}</td>
+              <td>${o.color||''}</td>
+              <td>${o.size||''}</td>
+              <td>${o.shoeSize||''}</td>
+              <td>${o.quantity||''}</td>
+              <td>${o.payment||''}</td>
+              <td>${o.other||''}</td>
+              <td style="white-space:nowrap">${o.createdAt ? new Date(o.createdAt).toLocaleString('ko-KR') : ''}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function exportCSV() {
+  if (!allOrders.length) return showToast('주문 내역이 없습니다');
+  const headers = ['상품명','이름','연락처','주소','색상','사이즈','호수','수량','결제방법','기타','신청일시'];
+  const rows = allOrders.map(o => [
+    o.productTitle, o.name, o.phone, o.address,
+    o.color, o.size, o.shoeSize, o.quantity,
+    o.payment, o.other,
+    o.createdAt ? new Date(o.createdAt).toLocaleString('ko-KR') : ''
+  ].map(v => `"${(v||'').toString().replace(/"/g,'""')}"`));
+
+  const csv = '﻿' + [headers, ...rows].map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `주문내역_${new Date().toLocaleDateString('ko-KR').replace(/\./g,'').replace(/ /g,'')}.csv`;
+  a.click();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
