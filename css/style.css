@@ -39,12 +39,22 @@ header {
 
 .header-logo {
   font-family: 'Cormorant Garamond', serif;
-  font-size: 24px;
-  font-weight: 400;
-  letter-spacing: 6px;
+  font-size: 15px;
+  font-weight: 300;
+  letter-spacing: 8px;
   color: var(--gold-light);
   text-transform: uppercase;
   text-decoration: none;
+}
+
+.hero h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 64px;
+  font-weight: 300;
+  color: var(--white);
+  letter-spacing: 14px;
+  line-height: 1.15;
+  text-transform: uppercase;
 }
 
 .header-nav a {
